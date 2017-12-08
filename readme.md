@@ -1,3 +1,7 @@
+
+[ajax模块](https://github.com/pavelShen/zepto-analysis/blob/develop/ajax/ajax.md)
+[ie模块](https://github.com/pavelShen/zepto-analysis/blob/develop/ie/ie.md)
+
 # todo
 
 ## zepto模块
