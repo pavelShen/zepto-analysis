@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+  <script src="./zepto.js"></script>
+  <script>
+    (function($){
+      $(function(){
+        window.a = function(){
+          console.log(arguments)
+        }
+        
+        $.ajax({
+          url:'http://ipservice.163.com/locate/api/getLoc?key=734FC2BD86B2CD0B8CF534073AD36EB2',
+          data:{
+            position:'hero'
+          },
+          jsonpCallback:'a',
+          dataType:'jsonp',
+          dataFilter:function(data,type){
+            return JSON.parse(data).s
+          },
+          success:function(data){
+            console.log(data)
+          }
+        })
+      })
+    }($))
+  </script>
+</body>
+</html>
