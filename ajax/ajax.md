@@ -1,18 +1,17 @@
 <!-- TOC -->
 
 - [代码结构](#代码结构)
-    - [全局事件触发器](#全局事件触发器)
-    - [钩子函数](#钩子函数)
-    - [ajax 数据过滤器](#ajax-数据过滤器)
-    - [默认设置](#默认设置)
-    - [工具函数](#工具函数)
-- [流程](#流程)
-    - [入口](#入口)
-- [$.ajax](#ajax)
+  - [全局事件触发器](#全局事件触发器)
+  - [钩子函数](#钩子函数)
+  - [ajax 数据过滤器](#ajax-数据过滤器)
+  - [默认设置](#默认设置)
+  - [工具函数](#工具函数)
+- [暴露的方法](#暴露的方法)
+  - [$.ajax](#ajax)
     - [合并配置信息](#合并配置信息)
     - [触发 ajaxStart 钩子](#触发-ajaxstart-钩子)
     - [根据 url 来设置 crossDomain 的值](#根据-url-来设置-crossdomain-的值)
-    - [调用 serializeData 函数，将`options.data`转字符串 , 如果是 get 或者 jsonp，将](#调用-serializedata-函数将optionsdata转字符串--如果是-get-或者-jsonp将)
+    - [调用 serializeData 函数，将`options.data`转字符串 , 如果是 get 或者 jsonp，将data 字符串拼接到 url 上](#调用-serializedata-函数将optionsdata转字符串--如果是-get-或者-jsonp将data-字符串拼接到-url-上)
     - [cache](#cache)
     - [jsonp](#jsonp)
     - [设置 header 值](#设置-header-值)
@@ -26,7 +25,7 @@
     - [当请求的状态为下载完成时，清空对请求状态的监听，并清除超时定时器](#当请求的状态为下载完成时清空对请求状态的监听并清除超时定时器)
     - [对xhr进行解析](#对xhr进行解析)
     - [请求成功则逐步触发 ajaxSuccess->complete->stop，失败则触发 ajaxError->complete->stop](#请求成功则逐步触发-ajaxsuccess-complete-stop失败则触发-ajaxerror-complete-stop)
-- [$.ajaxJSONP](#ajaxjsonp)
+  - [$.ajaxJSONP](#ajaxjsonp)
 
 <!-- /TOC -->
 
@@ -34,7 +33,7 @@
 
 ## 代码结构
 
-#### 全局事件触发器
+### 全局事件触发器
 
 通过 triggerGlobal 函数调用 triggerAndReturn 函数来触发全局的监听事件
 
@@ -47,7 +46,7 @@ $(document).on("ajaxBeforeSend", function(e, xhr, options) {
 });
 ```
 
-#### 钩子函数
+### 钩子函数
 
 当 global: true 时，触发钩子函数
 
@@ -59,7 +58,7 @@ $(document).on("ajaxBeforeSend", function(e, xhr, options) {
 * ajaxComplete (data: xhr, options) ：请求已经完成后，无论请求是成功或者失败。
 * ajaxStop (global) ：如果这是最后一个活跃着的 Ajax 请求，将会被触发。
 
-#### ajax 数据过滤器
+### ajax 数据过滤器
 
 对请求返回的结果进行过滤 ( 该方法仅在 ajax 请求中使用，jsonp 无效 )
 
@@ -69,7 +68,7 @@ dataFilter:function(data,type){
 },
 ```
 
-#### 默认设置
+### 默认设置
 
 ```javascript
 $.ajaxSettings = {
@@ -113,7 +112,7 @@ $.ajaxSettings = {
 };
 ```
 
-#### 工具函数
+### 工具函数
 
 * mimeToDataType 设置 dataType
 * appendQuery 将查询函数拼接到 url 上
@@ -124,16 +123,15 @@ $.ajaxSettings = {
 * $.fn.load 当请求的 url 为 html 页面时，吐出页面
 * serialize 将 data 的键值对转成[key=value]的数组
 
-## 流程
+## 暴露的方法
 
-#### 入口
-
+核心方法就是`$.ajax`和`$.ajaxJSONP`，`$.get,$.post,$.getJSON`均为经过配置后的ajax方法，故不做详细描述
 ```javascript
 $.ajax = function(options) {};
 $.ajaxJSONP = function(options, deferred) {};
 ```
 
-## $.ajax
+### $.ajax
 
 #### 合并配置信息
 #### 触发 ajaxStart 钩子
@@ -150,8 +148,7 @@ settings.crossDomain =
   urlAnchor.protocol + "//" + urlAnchor.host;
 ```
 
-#### 调用 serializeData 函数，将`options.data`转字符串 , 如果是 get 或者 jsonp，将
-   data 字符串拼接到 url 上
+#### 调用 serializeData 函数，将`options.data`转字符串 , 如果是 get 或者 jsonp，将data 字符串拼接到 url 上
 
 根据条件内部调用 $.param 和 appendQuery 函数
 
@@ -188,7 +185,6 @@ function appendQuery(url, query) {
 | 2   | HEADERS_RECEIVED | send() 方法已经被调用，并且头部和状态已经可获得。 |
 | 3   | LOADING          | 下载中； responseText 属性已经包含部分数据。      |
 | 4   | DONE             | 下载操作已完成。                                  |
-`
 
 #### 触发 ajaxBeforeSend 钩子
 
@@ -248,7 +244,7 @@ if ((xhr.status >= 200 && xhr.status < 300) || xhr.status == 304 || (xhr.status 
 
 ---
 
-## $.ajaxJSONP
+### $.ajaxJSONP
 
 ```javascript
 $.ajaxJSONP = function(options, deferred) {
