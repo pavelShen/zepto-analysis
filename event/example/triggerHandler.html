@@ -11,7 +11,7 @@
     eft
     <span>abc</span>
   </div>
-  <script src="./zepto.js"></script>
+  <script src="../../src/zepto.js"></script>
   <script>
     (function($){
       $(function(){
@@ -19,10 +19,10 @@
           console.log('div')
         })
 
-        $('span').on('click',function(){
+        $('span').on('click.abc',function(){
           console.log('abc')
         })
-        $('span').on('click',function(){
+        $('span').on('click.efg',function(){
           console.log('efg')
         })
 
