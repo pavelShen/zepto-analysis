@@ -2,8 +2,10 @@
 
 - [代码结构](#代码结构)
   - [全局事件触发器](#全局事件触发器)
+    - [源码](#源码)
   - [钩子函数](#钩子函数)
   - [ajax 数据过滤器](#ajax-数据过滤器)
+    - [源码](#源码-1)
   - [默认设置](#默认设置)
   - [工具函数](#工具函数)
 - [暴露的方法](#暴露的方法)
@@ -17,11 +19,7 @@
     - [设置 header 值](#设置-header-值)
     - [ajax状态监听函数`onreadystatechange`](#ajax状态监听函数onreadystatechange)
     - [触发 ajaxBeforeSend 钩子](#触发-ajaxbeforesend-钩子)
-    - [设置 async 属性](#设置-async-属性)
-    - [执行 xhr.open, 触发 xhr.onreadystatechange(readyState 切换为 1)](#执行-xhropen-触发-xhronreadystatechangereadystate-切换为-1)
-    - [调用`nativeSetHeader`方法，设置xhr的header头](#调用nativesetheader方法设置xhr的header头)
-    - [如果timeout>0,开启超时的定时器，如果超过时间，触发中断方法](#如果timeout0开启超时的定时器如果超过时间触发中断方法)
-    - [执行xhr.send方法发送数据请求-》（触发 xhr.onreadystatechange(readyState 切换为 2->3->4)）](#执行xhrsend方法发送数据请求-触发-xhronreadystatechangereadystate-切换为-2-3-4)
+    - [发送请求前的准备](#发送请求前的准备)
     - [当请求的状态为下载完成时，清空对请求状态的监听，并清除超时定时器](#当请求的状态为下载完成时清空对请求状态的监听并清除超时定时器)
     - [对xhr进行解析](#对xhr进行解析)
     - [请求成功则逐步触发 ajaxSuccess->complete->stop，失败则触发 ajaxError->complete->stop](#请求成功则逐步触发-ajaxsuccess-complete-stop失败则触发-ajaxerror-complete-stop)
@@ -46,6 +44,21 @@ $(document).on("ajaxBeforeSend", function(e, xhr, options) {
 });
 ```
 
+#### 源码
+```javascript
+// trigger a custom event and return false if it was cancelled
+function triggerAndReturn(context, eventName, data) {
+  var event = $.Event(eventName)
+  $(context).trigger(event, data)
+  return !event.isDefaultPrevented()
+}
+
+// trigger an Ajax "global" event
+function triggerGlobal(settings, context, eventName, data) {
+  if (settings.global) return triggerAndReturn(context || document, eventName, data)
+}
+```
+
 ### 钩子函数
 
 当 global: true 时，触发钩子函数
@@ -66,6 +79,15 @@ $(document).on("ajaxBeforeSend", function(e, xhr, options) {
 dataFilter:function(data,type){
   return JSON.parse(data).s
 },
+```
+
+#### 源码
+```javascript
+function ajaxDataFilter(data, type, settings) {
+  if (settings.dataFilter == empty) return data
+  var context = settings.context
+  return settings.dataFilter.call(context, data, type)
+}
 ```
 
 ### 默认设置
@@ -134,7 +156,18 @@ $.ajaxJSONP = function(options, deferred) {};
 ### $.ajax
 
 #### 合并配置信息
+```javascript
+var settings = $.extend({}, options || {}),
+
+// 设置默认值
+for (key in $.ajaxSettings) if (settings[key] === undefined) settings[key] = $.ajaxSettings[key]
+```
+
 #### 触发 ajaxStart 钩子
+```javascript
+ajaxStart(settings)
+```
+
 #### 根据 url 来设置 crossDomain 的值
 
 * 如果 url 和 location.host 相等，则 crossDomain 为 false
@@ -156,6 +189,25 @@ settings.crossDomain =
   修改为？
 
 ```javascript
+function serializeData(options) {
+  if (options.processData && options.data && $.type(options.data) != "string")
+    options.data = $.param(options.data, options.traditional)
+  if (options.data && (!options.type || options.type.toUpperCase() == 'GET' || 'jsonp' == options.dataType))
+    options.url = appendQuery(options.url, options.data), options.data = undefined
+}
+
+$.param = function(obj, traditional){
+  var params = []
+  params.add = function(key, value) {
+    if ($.isFunction(value)) value = value()
+    if (value == null) value = ""
+    this.push(escape(key) + '=' + escape(value))
+  }
+  // 方法里面加载了很多参数条件判断，最常见的用法是直接调用params.add方法
+  serialize(params, obj, traditional)
+  return params.join('&').replace(/%20/g, '+')
+}
+
 function appendQuery(url, query) {
   if (query == "") return url;
   return (url + "&" + query).replace(/[&?]{1,2}/, "?");
@@ -167,12 +219,33 @@ function appendQuery(url, query) {
 如果 cache 设置为 false 或者 dataType 类型是 script 或 jsonp, 则通过在 url 上拼
 接`_= 时间戳`不使用浏览器缓存
 
-#### jsonp
+```javascript
+if (settings.cache === false || (
+  (!options || options.cache !== true) &&
+  ('script' == dataType || 'jsonp' == dataType)
+))
+settings.url = appendQuery(settings.url, '_=' + Date.now())
+```
 
-如果 dataType=jsonp, 则在 url 最后拼接 callback=?，传入 setting 返回 $.ajaxJSONP
-方法，后面详细介绍
+#### jsonp
+如果 dataType=jsonp, 则在 url 最后拼接 callback=?占位，最后使用replace替换`?`,传入 setting 返回
+
+$.ajaxJSONP方法，后面详细介绍
 
 #### 设置 header 值
+```javascript
+if (!settings.crossDomain) setHeader('X-Requested-With', 'XMLHttpRequest')
+setHeader('Accept', mime || '*/*')
+if (mime = settings.mimeType || mime) {
+  if (mime.indexOf(',') > -1) mime = mime.split(',', 2)[0]
+  xhr.overrideMimeType && xhr.overrideMimeType(mime)
+}
+if (settings.contentType || (settings.contentType !== false && settings.data && settings.type.toUpperCase() != 'GET'))
+  setHeader('Content-Type', settings.contentType || 'application/x-www-form-urlencoded')
+
+if (settings.headers) for (name in settings.headers) setHeader(name, settings.headers[name])
+xhr.setRequestHeader = setHeader
+```
 
 #### ajax状态监听函数`onreadystatechange`
 
@@ -190,17 +263,38 @@ function appendQuery(url, query) {
 
 如果 ajaxBeforeSend 返回 false 则中断 ajax 请求 , 触发 ajaxError 钩子（内部触发 ajaxComplete 钩子 -》ajaxStop 钩子）
 
-#### 设置 async 属性
-#### 执行 xhr.open, 触发 xhr.onreadystatechange(readyState 切换为 1)
+#### 发送请求前的准备
+```javascript
+// 设置 async 属性
+var async = 'async' in settings ? settings.async : true
 
-`xhr.open(settings.type, settings.url, async, settings.username,
-settings.password)`
+// 执行 xhr.open, 触发 xhr.onreadystatechange(readyState 切换为 1)
+xhr.open(settings.type, settings.url, async, settings.username,
+settings.password)
 
-#### 调用`nativeSetHeader`方法，设置xhr的header头
-#### 如果timeout>0,开启超时的定时器，如果超过时间，触发中断方法
-#### 执行xhr.send方法发送数据请求-》（触发 xhr.onreadystatechange(readyState 切换为 2->3->4)）
+// 调用`nativeSetHeader`方法，设置xhr的header头
+for (name in headers) nativeSetHeader.apply(xhr, headers[name])
+
+// 如果timeout>0,开启超时的定时器，如果超过时间，触发中断方法
+if (settings.timeout > 0) abortTimeout = setTimeout(function(){
+  xhr.onreadystatechange = empty
+  xhr.abort()
+  ajaxError(null, 'timeout', xhr, settings, deferred)
+}, settings.timeout)
+
+// 执行xhr.send方法发送数据请求-》（触发 xhr.onreadystatechange(readyState 切换为 2->3->4)）
+// avoid sending empty string (#319)
+xhr.send(settings.data ? settings.data : null)
+```
 
 #### 当请求的状态为下载完成时，清空对请求状态的监听，并清除超时定时器
+```javascript
+if (xhr.readyState == 4) {
+  xhr.onreadystatechange = empty
+  clearTimeout(abortTimeout)
+}
+```
+
 #### 对xhr进行解析
 ```javascript
 // 成功的请求状态，对协议为file的情况进行特殊判断
