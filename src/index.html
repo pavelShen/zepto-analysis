@@ -7,36 +7,14 @@
   <title>Document</title>
 </head>
 <body>
-  <form class="form1" id="form1">
-    <div name="div1">abc</div>
-    <input type="text" name="name" placeholder="姓名">
-    <input type="text" name="phone" placeholder="电话">
-    <div>
-        <input id="box1" type="checkbox" name="box" value="盒子1" />
-        <label for="box1">box1</label>
-        <input id="box2" type="checkbox" name="box" value="盒子2" />
-        <label for="box2">box2</label>
-    </div>
-    <select name="mysel" id="" multiple style="width:100px">
-      <option value="a">a</option>
-      <option value="b">b</option>
-      <option value="c">c</option>
-      <option value="d">d</option>
-    </select>
-    <button type="submit">tijiao</button>
-  </form>
+  <div id="div1">
+    <div class="xx"></div>
+  </div>
   <script src="./zepto.js"></script>
   <script>
-    (function($){
-      $(function(){
-        $('.form1').submit(function(e){
-          // var d = $(this).serializeArray()
-          var f = $(this).serialize()
-          console.log(f)
-          return false
-        })
-      })
-    }($))
+    $(function(){
+
+    })
   </script>
 </body>
 </html>
