@@ -8,12 +8,18 @@
 </head>
 <body>
   <div id="div1">
-    <div class="xx"></div>
+    <div class="xx">
+      <span>ab</span>
+    </div>
   </div>
+
+  <div class="a">a1</div>
+  <div class="a">a2</div>
   <script src="./zepto.js"></script>
   <script>
-    $(function(){
-
+    var x = $('.a').each(function(){
+      console.log($(this).text())
+      return false
     })
   </script>
 </body>
