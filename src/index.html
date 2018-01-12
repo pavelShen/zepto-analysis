@@ -7,20 +7,20 @@
   <title>Document</title>
 </head>
 <body>
-  <div id="div1">
-    <div class="xx">
+  <div class="box">
+    <div id="div1">
+      <span>ab</span>
+      <p class="test">test text</p>
+    </div>
+    <div id="div2">
       <span>ab</span>
     </div>
   </div>
-
-  <div class="a">a1</div>
-  <div class="a">a2</div>
+  
   <script src="./zepto.js"></script>
   <script>
-    var x = $('.a').each(function(){
-      console.log($(this).text())
-      return false
-    })
+    debugger;
+    var x = $('#div2').replaceWith('abc')
   </script>
 </body>
 </html>

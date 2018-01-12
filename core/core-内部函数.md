@@ -1,10 +1,10 @@
 <!-- TOC -->
 
 - [内部函数](#内部函数)
+  - [match](#match)
   - [isPlainObject](#isplainobject)
   - [likeArray](#likearray)
   - [flatten](#flatten)
-    - [没搞懂$.fn.concat.apply([], array) 和直接返回 array 有毛区别](#没搞懂fnconcatapply-array-和直接返回-array-有毛区别)
   - [dasherize](#dasherize)
   - [uniq](#uniq)
   - [classRE](#classre)
@@ -19,6 +19,30 @@
 <!-- /TOC -->
 
 ## 内部函数
+
+### match
+```javascript
+// 如果匹配css选择器则返回true，否则返回false
+zepto.matches = function(element, selector) {
+  if (!selector || !element || element.nodeType !== 1) return false
+  var matchesSelector = element.matches || element.webkitMatchesSelector ||
+                        element.mozMatchesSelector || element.oMatchesSelector ||
+                        element.matchesSelector
+  // 通过matches API进行判断
+  if (matchesSelector) return matchesSelector.call(element, selector)
+  // 兼容方案
+  var match, parent = element.parentNode, temp = !parent
+  // 没有父元素，则createElement('div')放入元素
+  if (temp) (parent = tempParent).appendChild(element)
+  // 按位非 ~x = -(x+1)
+  // 即 -1 => 0, 1=> -2
+  // zepto选择器找不到的话 match=0
+  match = ~zepto.qsa(parent, selector).indexOf(element)
+  // 查找完毕，清理内存
+  temp && tempParent.removeChild(element)
+  return match
+}
+```
 
 ### isPlainObject
 ```javascript
@@ -49,7 +73,6 @@ function likeArray(obj) {
 ```
 
 ### flatten
-#### 没搞懂$.fn.concat.apply([], array) 和直接返回 array 有毛区别
 ```javascript
 // 如果数组有内容
 // 调用concat的原型方法，铺平一层
