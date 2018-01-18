@@ -1,22 +1,33 @@
 <!-- TOC -->
 
-- [原型方法](#原型方法)
-  - [ready](#ready)
-  - [each](#each)
-  - [filter](#filter)
-  - [not](#not)
-  - [has](#has)
-  - [find](#find)
-  - [closest](#closest)
-  - [parents](#parents)
-  - [children](#children)
-  - [css](#css)
-  - [width,height](#widthheight)
-  - [after,prepend,before,append,insertAfter,insertBefore,appendTo,prependTo](#afterprependbeforeappendinsertafterinsertbeforeappendtoprependto)
+- [原型方法](#%E5%8E%9F%E5%9E%8B%E6%96%B9%E6%B3%95)
+    - [ready](#ready)
+    - [each](#each)
+  - [元素匹配](#%E5%85%83%E7%B4%A0%E5%8C%B9%E9%85%8D)
+    - [filter](#filter)
+    - [not](#not)
+    - [has](#has)
+    - [find](#find)
+    - [closest](#closest)
+    - [parents](#parents)
+    - [children](#children)
+  - [dom操作](#dom%E6%93%8D%E4%BD%9C)
+    - [wrap,wrapAll](#wrapwrapall)
+    - [after,prepend,before,append,insertAfter,insertBefore,appendTo,prependTo](#afterprependbeforeappendinsertafterinsertbeforeappendtoprependto)
+  - [属性操作(获取，赋值)](#%E5%B1%9E%E6%80%A7%E6%93%8D%E4%BD%9C%E8%8E%B7%E5%8F%96%EF%BC%8C%E8%B5%8B%E5%80%BC)
+    - [attr](#attr)
+    - [data](#data)
+    - [width,height](#widthheight)
+    - [css](#css)
+    - [hasClass](#hasclass)
+  - [偏移](#%E5%81%8F%E7%A7%BB)
+    - [offsetParent](#offsetparent)
+    - [offset](#offset)
+    - [scrollTop](#scrolltop)
 
 <!-- /TOC -->
 
-## 原型方法
+# 原型方法
 
 ### ready
 ```javascript
@@ -43,6 +54,8 @@ each: function(callback){
   return this
 },
 ```
+
+## 元素匹配
 
 ### filter
 ```javascript
@@ -160,74 +173,53 @@ children: function(selector){
 },
 ```
 
+## dom操作
 
-
-
-
-
-
-
-
-
-
-
-
-
-### css
+### wrap,wrapAll
 ```javascript
-css: function(property, value){
-  if (arguments.length < 2) {
-    var element = this[0]
-    if (typeof property == 'string') {
-      if (!element) return
-      return element.style[camelize(property)] || getComputedStyle(element, '').getPropertyValue(property)
-    } else if (isArray(property)) {
-      if (!element) return
-      var props = {}
-      var computedStyle = getComputedStyle(element, '')
-      $.each(property, function(_, prop){
-        props[prop] = (element.style[camelize(prop)] || computedStyle.getPropertyValue(prop))
-      })
-      return props
-    }
+wrap: function(structure){
+  var func = isFunction(structure)
+  // 存在需要包裹的元素 && 传入的不是一个方法
+  if (this[0] && !func)
+    // 传入的structure应该是('<div><p></p></div>')这种样子
+    // 这样他会通过$函数=》zepto.fragment =》createElement生成新的dom元素
+    // 注：建议这里不要传入选择器，不然他会去dom中取得符合条件的第一个元素，大多数情况会与预想不符
+    var dom   = $(structure).get(0),
+    // 有父元素或者长度大于1（注意：是大于！没有等于！）
+    // 如果有父元素（这里理解成已经存在于dom的元素比较方便）或者有多个元素需要wrap，则克隆包裹的构造器
+        clone = dom.parentNode || this.length > 1
+
+  // 对每一个元素执行wrapAll方法
+  return this.each(function(index){
+    // 如果传入方法，则对dom执行该方法，根据返回值生成新的structure
+    // $('input').wrap(function(index){
+    //   return '<span class=' + this.type + 'field />'
+    // })
+    //=> <span class=textfield><input type=text /></span>,
+    //   <span class=searchfield><input type=search /></span>
+    $(this).wrapAll(
+      func ? structure.call(this, index) :
+        clone ? dom.cloneNode(true) : dom
+    )
+  })
+},
+wrapAll: function(structure){
+  // 存在需要wrap的元素
+  if (this[0]) {
+    // 在需要wrap的元素之前插入$(structure)
+    $(this[0]).before(structure = $(structure))
+    // <div class="a"></div><div class="box">...</div>
+    var children
+    // 进入structure的最深层级
+    // structure有子元素,则替换structure为他的第一个子元素
+    while ((children = structure.children()).length) structure = children.first()
+    $(structure).append(this)
   }
-
-  var css = ''
-  if (type(property) == 'string') {
-    if (!value && value !== 0)
-      this.each(function(){ this.style.removeProperty(dasherize(property)) })
-    else
-      css = dasherize(property) + ":" + maybeAddPx(property, value)
-  } else {
-    for (key in property)
-      if (!property[key] && property[key] !== 0)
-        this.each(function(){ this.style.removeProperty(dasherize(key)) })
-      else
-        css += dasherize(key) + ':' + maybeAddPx(key, property[key]) + ';'
-  }
-
-  return this.each(function(){ this.style.cssText += ';' + css })
-}
-```
-
-### width,height
-```javascript
-// Generate the `width` and `height` functions
-;['width', 'height'].forEach(function(dimension){
-  var dimensionProperty =
-    dimension.replace(/./, function(m){ return m[0].toUpperCase() })
-
-  $.fn[dimension] = function(value){
-    var offset, el = this[0]
-    if (value === undefined) return isWindow(el) ? el['inner' + dimensionProperty] :
-      isDocument(el) ? el.documentElement['scroll' + dimensionProperty] :
-      (offset = this.offset()) && offset[dimension]
-    else return this.each(function(idx){
-      el = $(this)
-      el.css(dimension, funcArg(this, value, idx, el[dimension]()))
-    })
-  }
-})
+  // 因为这里返回的是this，
+  // 所以$('<em>broken</em>').wrap('<li>').appendTo(document.body)写法无效
+  // 替代方案 $('<em>better</em>').appendTo(document.body).wrap('<li>')
+  return this
+},
 ```
 
 ### after,prepend,before,append,insertAfter,insertBefore,appendTo,prependTo
@@ -235,7 +227,7 @@ css: function(property, value){
 // adjacencyOperators = [ 'after', 'prepend', 'before', 'append' ],
 adjacencyOperators.forEach(function(operator, operatorIndex) {
   // 操作的是元素内部？
-  var inside = operatorIndex % 2 //=> prepend, append
+  var inside = operatorIndex % 2 //  => true(prepend, append)
 
   $.fn[operator] = function(){
     // arguments can be nodes, arrays of nodes, Zepto objects and HTML strings
@@ -243,21 +235,21 @@ adjacencyOperators.forEach(function(operator, operatorIndex) {
     // nodes => 数组 => node元素集合
     //       => 原生对象 => 原生对象
     //       => 字符串 => $()包一层
-        nodes = $.map(arguments, function(arg) {
-          var arr = []
-          argType = type(arg)
-          if (argType == "array") {
-            arg.forEach(function(el) {
-              if (el.nodeType !== undefined) return arr.push(el)
-              else if ($.zepto.isZ(el)) return arr = arr.concat(el.get())
-              arr = arr.concat(zepto.fragment(el))
-            })
-            return arr
-          }
-          return argType == "object" || arg == null ?
-            arg : zepto.fragment(arg)
-        }),
-        parent, copyByClone = this.length > 1
+    nodes = $.map(arguments, function(arg) {
+      var arr = []
+      argType = type(arg)
+      if (argType == "array") {
+        arg.forEach(function(el) {
+          if (el.nodeType !== undefined) return arr.push(el)
+          else if ($.zepto.isZ(el)) return arr = arr.concat(el.get())
+          arr = arr.concat(zepto.fragment(el))
+        })
+        return arr
+      }
+      return argType == "object" || arg == null ?
+        arg : zepto.fragment(arg)
+    }),
+    parent, copyByClone = this.length > 1
     
     // 如果this不存在，则直接返回this，即一个空zepto集合
     if (nodes.length < 1) return this
@@ -280,12 +272,14 @@ adjacencyOperators.forEach(function(operator, operatorIndex) {
         // 如果不存在父元素，直接把node集合删除
         else if (!parent) return $(node).remove()
 
-        // 通过insertBefore插入不同的位置（target对应）
+        // 通过insertBefore插入(移动)到不同的位置（target对应）
         parent.insertBefore(node, target)
         if (parentInDocument) traverseNode(node, function(el){
+          // node是个script的话
           if (el.nodeName != null && el.nodeName.toUpperCase() === 'SCRIPT' &&
               (!el.type || el.type === 'text/javascript') && !el.src){
             var target = el.ownerDocument ? el.ownerDocument.defaultView : window
+            // window.eval(脚本内容)
             target['eval'].call(target, el.innerHTML)
           }
         })
@@ -304,3 +298,210 @@ adjacencyOperators.forEach(function(operator, operatorIndex) {
   }
 })
 ```
+
+## 属性操作(获取，赋值)
+
+### attr
+```javascript
+attr: function(name, value){
+  var result
+  return (typeof name == 'string' && !(1 in arguments)) ?
+    // 只有一个参数，获取值
+    (0 in this && this[0].nodeType == 1 && (result = this[0].getAttribute(name)) != null ? result : undefined) :
+    // 设置值
+    this.each(function(idx){
+      if (this.nodeType !== 1) return
+      if (isObject(name)) for (key in name) setAttribute(this, key, name[key])
+      else setAttribute(this, name, funcArg(this, value, idx, this.getAttribute(name)))
+    })
+},
+```
+
+### data
+```javascript
+data: function(name, value){
+  // <div data-userName='syc'></div>
+  // data-user-name
+  var attrName = 'data-' + name.replace(capitalRE, '-$1').toLowerCase()
+
+  var data = (1 in arguments) ?
+    this.attr(attrName, value) :
+    this.attr(attrName)
+
+  // deserializeValue =>
+  // "true"  => true
+  // "false" => false
+  // "null"  => null
+  // "42"    => 42
+  // "42.5"  => 42.5
+  // "08"    => "08"
+  // JSON    => parse if valid
+  // String  => self
+  return data !== null ? deserializeValue(data) : undefined
+},
+```
+
+### width,height
+```javascript
+// Generate the `width` and `height` functions
+;['width', 'height'].forEach(function(dimension){
+  // 首字母大写
+  var dimensionProperty =
+    dimension.replace(/./, function(m){ return m[0].toUpperCase() })
+
+  $.fn[dimension] = function(value){
+    var offset, el = this[0]
+    // 取值
+    if (value === undefined) return isWindow(el) ? el['inner' + dimensionProperty] :
+      isDocument(el) ? el.documentElement['scroll' + dimensionProperty] :
+      // zepto对象执行offset方法获取this[0]的offset，再获取结果
+      // offset方法中获取的宽高是Math.round的结果
+      (offset = this.offset()) && offset[dimension]
+    // 赋值
+    else return this.each(function(idx){
+      el = $(this)
+      el.css(dimension, funcArg(this, value, idx, el[dimension]()))
+    })
+  }
+})
+```
+
+### css
+```javascript
+css: function(property, value){
+  // 取值
+  if (arguments.length < 2) {
+    var element = this[0]
+    // 设置单个值
+    if (typeof property == 'string') {
+      if (!element) return
+      // border-top => borderTop
+      // 通常，要了解元素样式的信息，仅仅使用 style 属性是不够的，这是因为它只包含了在元素内嵌 style 属性（attribute）上声明的的 CSS 属性，而不包括来自其他地方声明的样式，如 <head> 部分的内嵌样式表，或外部样式表。要获取一个元素的所有 CSS 属性，你应该使用 window.getComputedStyle()。
+      return element.style[camelize(property)] || getComputedStyle(element, '').getPropertyValue(property)
+    } 
+    // $('.box').css(['height','top'])
+    // 返回{height: "44px", top: "auto"}
+    else if (isArray(property)) {
+      if (!element) return
+      var props = {}
+      var computedStyle = getComputedStyle(element, '')
+      $.each(property, function(_, prop){
+        props[prop] = (element.style[camelize(prop)] || computedStyle.getPropertyValue(prop))
+      })
+      return props
+    }
+  }
+
+  var css = ''
+  if (type(property) == 'string') {
+    // value为非值（排除0）
+    if (!value && value !== 0)
+      this.each(function(){ this.style.removeProperty(dasherize(property)) })
+    else
+      // borderTop:30px
+      css = dasherize(property) + ":" + maybeAddPx(property, value)
+  } else {
+    for (key in property)
+      if (!property[key] && property[key] !== 0)
+        this.each(function(){ this.style.removeProperty(dasherize(key)) })
+      else
+        css += dasherize(key) + ':' + maybeAddPx(key, property[key]) + ';'
+  }
+
+  return this.each(function(){ this.style.cssText += ';' + css })
+}
+```
+
+### hasClass
+```javascript
+hasClass: function(name){
+  if (!name) return false
+  // some第二个参数为回调函数的this值
+  return emptyArray.some.call(this, function(el){
+    return this.test(className(el))
+  }, classRE(name))
+},
+```
+
+## 偏移
+
+### offsetParent
+```javascript
+offsetParent: function() {
+  return this.map(function(){
+    // display:none的情况 => null
+    var parent = this.offsetParent || document.body
+    // offsetParent的祖先定位可能会取到table元素，详情参见offsetParent的mdn
+    while (parent && !rootNodeRE.test(parent.nodeName) && $(parent).css("position") == "static")
+      parent = parent.offsetParent
+    return parent
+  })
+}
+```
+
+### offset
+```javascript
+offset: function(coordinates){
+  // 设置offset的值，修改$(this)的位置，位置是相对于document的位置
+  // 注意这里会修改position属性
+  if (coordinates) return this.each(function(index){
+    var $this = $(this),
+        coords = funcArg(this, coordinates, index, $this.offset()),
+        parentOffset = $this.offsetParent().offset(),
+        props = {
+          top:  coords.top  - parentOffset.top,
+          left: coords.left - parentOffset.left
+        }
+
+    if ($this.css('position') == 'static') props['position'] = 'relative'
+    $this.css(props)
+  })
+  // 错误处理
+  if (!this.length) return null
+  if (document.documentElement !== this[0] && !$.contains(document.documentElement, this[0]))
+    return {top: 0, left: 0}
+  var obj = this[0].getBoundingClientRect()
+  // 最后将结果返回
+  return {
+    left: obj.left + window.pageXOffset,
+    top: obj.top + window.pageYOffset,
+    width: Math.round(obj.width),
+    height: Math.round(obj.height)
+  }
+},
+```
+
+### scrollTop
+```javascript
+scrollTop: function(value){
+  if (!this.length) return
+  // document.documentElement || document.body
+  var hasScrollTop = 'scrollTop' in this[0]
+  // 没有传值，获取scrollTop
+  // 如果存在scrollTop属性 => 获取滚动条滚动距离
+  // 当一个元素的内容没有产生垂直方向的滚动条，那么它的 scrollTop 值为0。
+  // 所以常规dom元素都有scrollTop
+  // window对象则取pageYOffset
+  if (value === undefined) return hasScrollTop ? this[0].scrollTop : this[0].pageYOffset
+  return this.each(hasScrollTop ?
+    // 内部元素滚动，如果无法滚动，再次获取还会是0
+    function(){ this.scrollTop = value } :
+    // window滚动
+    function(){ this.scrollTo(this.scrollX, value) })
+},
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

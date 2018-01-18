@@ -15,6 +15,7 @@
   - [isNumeric](#isnumeric)
   - [map](#map)
   - [each](#each)
+  - [maybeAddPx](#maybeaddpx)
 
 <!-- /TOC -->
 
@@ -244,5 +245,15 @@ $.each = function(elements, callback){
   }
 
   return elements
+}
+```
+
+### maybeAddPx
+```javascript
+// cssNumber = { 'column-count': 1, 'columns': 1, 'font-weight': 1, 'line-height': 1,'opacity': 1, 'z-index': 1, 'zoom': 1 },
+// dasherize:驼峰转中划线
+// 非特殊情况 加px
+function maybeAddPx(name, value) {
+  return (typeof value == "number" && !cssNumber[dasherize(name)]) ? value + "px" : value
 }
 ```

@@ -5,22 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Document</title>
+  <style>
+    *{
+      margin:0;
+      padding:0;
+    }
+    .wrap{
+      margin-top:10px;
+      position:relative;
+    }
+    .content{
+      margin-top:2px;
+      display: block;
+      float: left;
+    }
+  </style>
 </head>
 <body>
-  <div class="box">
-    <div id="div1">
-      <span>ab</span>
-      <p class="test">test text</p>
-    </div>
-    <div id="div2">
-      <span>ab</span>
-    </div>
+  <div>aaa</div>
+  <div class="wrap">
+    <span class="content">ds</span>
   </div>
-  
   <script src="./zepto.js"></script>
   <script>
-    debugger;
-    var x = $('#div2').replaceWith('abc')
+    var d = $('.content').position();
+    console.log(d)
   </script>
 </body>
 </html>

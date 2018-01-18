@@ -12,7 +12,7 @@
 
 #### default
 
-* [ ] zepto 核心模块；包含许多方法
+* [x] zepto 核心模块；包含许多方法
 * [x] event 通过 on()& off() 处理事件
 * [x] ajax XMLHttpRequest 和 JSONP 实用功能
 * [x] form 序列化 & 提交 web 表单
