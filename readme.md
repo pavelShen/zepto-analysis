@@ -1,3 +1,5 @@
+[core 模块](https://github.com/pavelShen/zepto-analysis/tree/develop/core)
+
 [ajax 模块](https://github.com/pavelShen/zepto-analysis/blob/develop/ajax/ajax.md)
 
 [ie 模块](https://github.com/pavelShen/zepto-analysis/blob/develop/ie/ie.md)
